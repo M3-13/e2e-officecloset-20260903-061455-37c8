@@ -39,7 +39,7 @@ async def create_item(
                 },
             )
 
-    form = await request.form()
+    form = await request.form(max_files=1, max_fields=3)
     name = form.get("name")
     category = form.get("category")
     image = form.get("image")
@@ -63,7 +63,7 @@ async def create_item(
             detail={"code": "missing_image", "message": "An image file is required."},
         )
 
-    data = await image.read()
+    data = await image.read(MAX_UPLOAD_BYTES + 1)
     if len(data) > MAX_UPLOAD_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_CONTENT_TOO_LARGE,
@@ -152,6 +152,13 @@ def delete_item(
             detail={"code": "forbidden", "message": "You do not own this item."},
         )
 
-    delete_image_file(item.image_url)
+    if not delete_image_file(item.image_url):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "code": "file_delete_failed",
+                "message": "The image file could not be deleted.",
+            },
+        )
     db.delete(item)
     db.commit()

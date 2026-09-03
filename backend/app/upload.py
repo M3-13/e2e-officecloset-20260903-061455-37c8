@@ -2,12 +2,15 @@
 
 import io
 import uuid
+import warnings
 from pathlib import Path
 
 from fastapi import HTTPException, status
 from PIL import Image, UnidentifiedImageError
 
 from .config import settings
+
+Image.MAX_IMAGE_PIXELS = 25_000_000
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 
@@ -28,7 +31,17 @@ def save_image(data: bytes) -> str:
     Re-encoding via Pillow drops EXIF/GPS metadata before the file is written.
     """
     try:
-        image = Image.open(io.BytesIO(data))
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            image = Image.open(io.BytesIO(data))
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail={
+                "code": "image_too_large",
+                "message": "The image has too many pixels to be processed safely.",
+            },
+        ) from exc
     except (UnidentifiedImageError, OSError) as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -69,12 +82,18 @@ def save_image(data: bytes) -> str:
     return filename
 
 
-def delete_image_file(image_url: str) -> None:
-    """Remove the stored file referenced by an image_url, if present."""
+def delete_image_file(image_url: str) -> bool:
+    """Remove the stored file referenced by an image_url, if present.
+
+    Returns ``True`` when the file was deleted or did not exist in the first
+    place, and ``False`` when a real error occurred so the caller can report it
+    instead of silently claiming success.
+    """
     filename = Path(image_url).name
     if not filename:
-        return
+        return True
     try:
         (settings.upload_dir / filename).unlink(missing_ok=True)
     except OSError:
-        return
+        return False
+    return True
