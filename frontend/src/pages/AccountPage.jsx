@@ -187,7 +187,7 @@ export default function AccountPage() {
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);
-      URL.revokeObjectURL(url);
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (err) {
       setExportError(err?.message ?? "Der Export konnte nicht erstellt werden.");
     } finally {
