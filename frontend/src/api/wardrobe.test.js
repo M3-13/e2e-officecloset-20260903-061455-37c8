@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { listItems, createItem, deleteItem } from "./wardrobe.js";
+import {
+  listItems,
+  createItem,
+  deleteItem,
+  itemImageUrl,
+  fetchItemImageBlob,
+} from "./wardrobe.js";
 
 describe("wardrobe api", () => {
   beforeEach(() => {
@@ -79,5 +85,42 @@ describe("wardrobe api", () => {
 
     expect(fetch.mock.calls[0][0]).toBe("/api/wardrobe/items/7");
     expect(fetch.mock.calls[0][1].method).toBe("DELETE");
+  });
+
+  it("builds the authenticated image address from the item id", () => {
+    expect(itemImageUrl(7)).toBe("/api/wardrobe/items/7/image");
+  });
+
+  it("fetches an item image with the Bearer header and returns its blob", async () => {
+    const blob = new Blob(["x"], { type: "image/png" });
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      blob: async () => blob,
+    });
+    window.localStorage.getItem = vi.fn(() => "tok123");
+
+    const result = await fetchItemImageBlob(7);
+
+    const [url, opts] = fetch.mock.calls[0];
+    expect(url).toBe("/api/wardrobe/items/7/image");
+    expect(opts.headers.Authorization).toBe("Bearer tok123");
+    expect(result).toBe(blob);
+  });
+
+  it("returns null for an image fetch without a token", async () => {
+    await expect(fetchItemImageBlob(7)).resolves.toBeNull();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("returns null when the image request is not ok", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      blob: async () => new Blob(),
+    });
+    window.localStorage.getItem = vi.fn(() => "tok123");
+
+    await expect(fetchItemImageBlob(7)).resolves.toBeNull();
   });
 });

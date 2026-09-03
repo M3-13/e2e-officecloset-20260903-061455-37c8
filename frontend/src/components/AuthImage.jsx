@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { getToken } from "../api/client.js";
-import { itemImageUrl } from "../api/wardrobe.js";
+import { fetchItemImageBlob } from "../api/wardrobe.js";
 
 export default function AuthImage({ item, className, alt, fallback = null }) {
   const [src, setSrc] = useState(null);
@@ -19,19 +18,9 @@ export default function AuthImage({ item, className, alt, fallback = null }) {
     let active = true;
 
     (async () => {
-      const token = getToken();
-      if (!token) {
-        return;
-      }
       try {
-        const response = await fetch(itemImageUrl(itemId), {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!response.ok) {
-          return;
-        }
-        const blob = await response.blob();
-        if (!active) {
+        const blob = await fetchItemImageBlob(itemId);
+        if (!blob || !active) {
           return;
         }
         objectUrl = URL.createObjectURL(blob);
