@@ -39,6 +39,8 @@ def _enforce_rate_limit(request: Request) -> None:
         window = _rate_buckets[key]
         while window and now - window[0] > _RATE_LIMIT_WINDOW_SECONDS:
             window.popleft()
+        if not window:
+            del _rate_buckets[key]
         if len(window) >= settings.auth_rate_limit_max_requests:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -48,6 +50,7 @@ def _enforce_rate_limit(request: Request) -> None:
                 },
             )
         window.append(now)
+        _rate_buckets[key] = window
 
 
 def reset_rate_limits() -> None:
