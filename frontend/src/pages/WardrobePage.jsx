@@ -2,31 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listItems, createItem, deleteItem } from "../api/wardrobe.js";
 import { ApiError } from "../api/client.js";
+import AuthImage from "../components/AuthImage.jsx";
 import "./WardrobePage.css";
 
 const CATEGORIES = ["Oberteil", "Hose", "Kleid", "Schuhe", "Accessoire"];
-
-function CardImage({ item }) {
-  const [failed, setFailed] = useState(false);
-
-  if (!item.image_url || failed) {
-    return (
-      <div className="card-media card-media-fallback" aria-hidden="true">
-        <span>{item.category}</span>
-      </div>
-    );
-  }
-
-  return (
-    <img
-      className="card-media"
-      src={item.image_url}
-      alt={item.name}
-      loading="lazy"
-      onError={() => setFailed(true)}
-    />
-  );
-}
 
 export default function WardrobePage() {
   const [items, setItems] = useState([]);
@@ -217,7 +196,16 @@ export default function WardrobePage() {
           <div className="wardrobe-grid">
             {items.map((item) => (
               <article key={item.id} className="wardrobe-card">
-                <CardImage item={item} />
+                <AuthImage
+                  item={item}
+                  className="card-media"
+                  alt={item.name}
+                  fallback={
+                    <div className="card-media card-media-fallback" aria-hidden="true">
+                      <span>{item.category}</span>
+                    </div>
+                  }
+                />
                 <div className="card-body">
                   <div className="card-heading">
                     <h3 className="card-title">{item.name}</h3>

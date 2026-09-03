@@ -1,4 +1,4 @@
-import { client } from "./client.js";
+import { client, getToken } from "./client.js";
 
 const ITEMS_PATH = "/api/wardrobe/items";
 
@@ -20,4 +20,22 @@ export function createItem({ name, category, image }) {
 
 export function deleteItem(itemId) {
   return client.del(`${ITEMS_PATH}/${itemId}`);
+}
+
+export function itemImageUrl(itemId) {
+  return `${ITEMS_PATH}/${itemId}/image`;
+}
+
+export async function fetchItemImageBlob(itemId) {
+  const token = getToken();
+  if (!token) {
+    return null;
+  }
+  const response = await fetch(itemImageUrl(itemId), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    return null;
+  }
+  return response.blob();
 }

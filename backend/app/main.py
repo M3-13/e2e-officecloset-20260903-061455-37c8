@@ -6,7 +6,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .db import Base, engine
@@ -58,4 +57,3 @@ app.include_router(outfits.router)
 app.include_router(account.router)
 
 settings.upload_dir.mkdir(parents=True, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=str(settings.upload_dir)), name="uploads")
