@@ -80,6 +80,12 @@
         "JWT_SECRET": {
           "generate": "hex",
           "bytes": 32
+        },
+        "AUTH_RATE_LIMIT_MAX_REQUESTS": {
+          "dev": "5"
+        },
+        "AUTH_RATE_LIMIT_DISABLED": {
+          "dev": "false"
         }
       }
     }
