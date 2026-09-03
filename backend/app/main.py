@@ -1,9 +1,9 @@
 import logging
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -22,11 +22,25 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Glamouröser Kleiderschrank-Manager", lifespan=lifespan)
 
-_origins = [
-    origin.strip()
-    for origin in os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173").split(",")
-    if origin.strip()
-]
+
+def _parse_origins(raw: str) -> list[str]:
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
+def _validate_origins(origins: list[str]) -> None:
+    if "*" in origins:
+        raise RuntimeError(
+            "FRONTEND_ORIGIN must not contain the wildcard '*': it is forbidden in "
+            "combination with allow_credentials=True. List explicit origins instead."
+        )
+
+
+def _https_enforced() -> bool:
+    return os.environ.get("HTTPS_ENFORCED", "").strip().lower() in {"1", "true", "yes"}
+
+
+_origins = _parse_origins(os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173"))
+_validate_origins(_origins)
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,6 +49,29 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "Content-Security-Policy": (
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; "
+        "base-uri 'self'; form-action 'self'"
+    ),
+}
+
+
+@app.middleware("http")
+async def security_headers_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    response = await call_next(request)
+    for name, value in _SECURITY_HEADERS.items():
+        response.headers[name] = value
+    if _https_enforced():
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 
 @app.exception_handler(Exception)
