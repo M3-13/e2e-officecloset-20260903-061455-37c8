@@ -6,12 +6,82 @@
       "dir": "frontend",
       "stack": "web-vite",
       "kind": "server",
-      "install": [["npm", "ci"]],
-      "build": [["npm", "run", "build"]],
-      "start": ["npm", "run", "dev", "--", "--port", "${PORT}"],
+      "install": [
+        [
+          "npm",
+          "ci"
+        ]
+      ],
+      "build": [
+        [
+          "npm",
+          "run",
+          "build"
+        ]
+      ],
+      "start": [
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "${PORT}"
+      ],
       "port": 5173,
       "port_env": "PORT",
-      "health": { "path": "/", "expect_status": [200] }
+      "health": {
+        "path": "/",
+        "expect_status": [
+          200
+        ]
+      }
+    },
+    {
+      "name": "api",
+      "dir": "backend",
+      "stack": "python",
+      "kind": "server",
+      "install": [
+        [
+          "${python}",
+          "-m",
+          "pip",
+          "install",
+          "-q",
+          "-r",
+          "requirements.txt"
+        ]
+      ],
+      "start": [
+        "${python}",
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "${PORT}"
+      ],
+      "port": 8000,
+      "port_env": "PORT",
+      "health": {
+        "path": "/api/health",
+        "expect_status": [
+          200
+        ]
+      },
+      "env": {
+        "DATABASE_URL": {
+          "dev": "sqlite:///./wardrobe.db"
+        },
+        "UPLOAD_DIR": {
+          "dev": "uploads"
+        },
+        "JWT_SECRET": {
+          "generate": "hex",
+          "bytes": 32
+        }
+      }
     }
   ]
 }
