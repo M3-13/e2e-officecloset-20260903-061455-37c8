@@ -185,6 +185,15 @@ def test_upload_rejects_content_length_over_limit(env: Env) -> None:
     assert list(env.upload_dir.iterdir()) == []
 
 
+def test_upload_rejects_decompression_bomb(env: Env, monkeypatch: pytest.MonkeyPatch) -> None:
+    user = _create_user(env.session_factory, "alice", "alice@example.com")
+    monkeypatch.setattr(Image, "MAX_IMAGE_PIXELS", 512)
+    resp = _upload_png(env, _headers(user), "Bombe", "Hose")
+    assert resp.status_code == 413
+    assert resp.json()["detail"]["code"] == "image_too_large"
+    assert list(env.upload_dir.iterdir()) == []
+
+
 def test_list_filters_by_category(env: Env) -> None:
     user = _create_user(env.session_factory, "alice", "alice@example.com")
     headers = _headers(user)
