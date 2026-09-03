@@ -1,21 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getToken } from "../api/client.js";
-import { deleteAccount } from "../api/account.js";
-
-function decodeUserId(token) {
-  if (!token) return null;
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-    const payload = JSON.parse(atob(padded));
-    return typeof payload.sub === "string" ? payload.sub : null;
-  } catch {
-    return null;
-  }
-}
+import { deleteAccount, getAccount, getAccountData } from "../api/account.js";
 
 const styles = `
 .account-section { display: flex; flex-direction: column; gap: var(--space-4); }
@@ -32,7 +18,7 @@ const styles = `
 }
 .account-row { margin: 0 0 var(--space-1); }
 .account-row .muted { font-size: var(--size-sm); }
-.account-danger-zone {
+.account-actions {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -83,14 +69,96 @@ const styles = `
 }
 `;
 
+function focusableElements(root) {
+  const selector = [
+    'a[href]',
+    'button:not([disabled])',
+    'input:not([disabled])',
+    'select:not([disabled])',
+    'textarea:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])',
+  ].join(",");
+  return Array.from(root.querySelectorAll(selector));
+}
+
+function trapFocus(event, root) {
+  if (event.key !== "Tab") return;
+  const focusable = focusableElements(root);
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 export default function AccountPage() {
   const navigate = useNavigate();
+  const [profile, setProfile] = useState(null);
+  const [profileError, setProfileError] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState(null);
 
   const signedIn = Boolean(getToken());
-  const userId = decodeUserId(getToken());
+
+  const deleteTriggerRef = useRef(null);
+  const cancelButtonRef = useRef(null);
+  const modalRef = useRef(null);
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (!signedIn) {
+      return undefined;
+    }
+    let cancelled = false;
+    getAccount()
+      .then((data) => {
+        if (!cancelled) setProfile(data);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setProfileError(
+            err?.message ?? "Die Kontodaten konnten nicht geladen werden.",
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn]);
+
+  useEffect(() => {
+    if (confirmOpen) {
+      wasOpenRef.current = true;
+      cancelButtonRef.current?.focus();
+    } else if (wasOpenRef.current) {
+      wasOpenRef.current = false;
+      deleteTriggerRef.current?.focus();
+    }
+  }, [confirmOpen]);
+
+  useEffect(() => {
+    if (!confirmOpen) {
+      return undefined;
+    }
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (!deleting) setConfirmOpen(false);
+      } else {
+        trapFocus(event, modalRef.current);
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [confirmOpen, deleting]);
 
   async function handleConfirmDelete() {
     setDeleting(true);
@@ -101,6 +169,29 @@ export default function AccountPage() {
     } catch (err) {
       setError(err?.message ?? "Das Konto konnte nicht gelöscht werden.");
       setDeleting(false);
+    }
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    setExportError(null);
+    try {
+      const data = await getAccountData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "konto-daten.json";
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError(err?.message ?? "Der Export konnte nicht erstellt werden.");
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -126,12 +217,50 @@ export default function AccountPage() {
           )}
 
           <div className="account-card">
-            <h2>Angemeldet</h2>
-            <p className="account-row">
-              <span className="muted">
-                {userId ? `Benutzer-ID: ${userId}` : "Sie sind angemeldet."}
-              </span>
+            <h2>Profil</h2>
+            {profileError ? (
+              <p className="account-error" role="alert">
+                {profileError}
+              </p>
+            ) : profile ? (
+              <>
+                <p className="account-row">
+                  <span className="muted">Benutzername</span>
+                  <br />
+                  {profile.username}
+                </p>
+                <p className="account-row">
+                  <span className="muted">E-Mail</span>
+                  <br />
+                  {profile.email}
+                </p>
+              </>
+            ) : (
+              <p className="muted">Kontodaten werden geladen …</p>
+            )}
+          </div>
+
+          <div className="account-card">
+            <h2>Daten exportieren</h2>
+            <p className="muted">
+              Laden Sie Ihr Profil samt aller Kleidungsstücke und Outfits als
+              JSON-Datei herunter.
             </p>
+            {exportError && (
+              <div className="account-error" role="alert">
+                {exportError}
+              </div>
+            )}
+            <div className="account-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={exporting}
+                onClick={handleExport}
+              >
+                {exporting ? "Exportiere …" : "Daten exportieren"}
+              </button>
+            </div>
           </div>
 
           <div className="account-card">
@@ -140,8 +269,9 @@ export default function AccountPage() {
               Das Löschen Ihres Kontos entfernt unwiderruflich alle
               Garderoben-, Kleidungsstück- und Outfit-Daten sowie Ihre Bilder.
             </p>
-            <div className="account-danger-zone">
+            <div className="account-actions">
               <button
+                ref={deleteTriggerRef}
                 type="button"
                 className="btn btn-danger"
                 onClick={() => setConfirmOpen(true)}
@@ -164,6 +294,7 @@ export default function AccountPage() {
           }}
         >
           <div
+            ref={modalRef}
             className="account-modal"
             onClick={(event) => event.stopPropagation()}
           >
@@ -174,6 +305,7 @@ export default function AccountPage() {
             </p>
             <div className="account-modal-actions">
               <button
+                ref={cancelButtonRef}
                 type="button"
                 className="btn btn-secondary"
                 disabled={deleting}

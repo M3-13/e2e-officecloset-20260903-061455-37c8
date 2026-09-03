@@ -14,3 +14,11 @@ export async function deleteAccount() {
   await client.del("/api/auth/account");
   clearToken();
 }
+
+export async function getAccount() {
+  return client.get("/api/account");
+}
+
+export async function getAccountData() {
+  return client.get("/api/account/data");
+}

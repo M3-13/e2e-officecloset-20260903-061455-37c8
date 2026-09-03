@@ -55,3 +55,9 @@ class OutfitOut(BaseModel):
 
 class OutfitList(BaseModel):
     outfits: list[OutfitOut]
+
+
+class AccountDataOut(BaseModel):
+    user: UserOut
+    items: list[ClothingItemOut]
+    outfits: list[OutfitOut]
