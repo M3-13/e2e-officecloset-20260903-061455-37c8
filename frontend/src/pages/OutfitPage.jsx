@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import client, { getToken } from "../api/client.js";
 import { listOutfits, createOutfit, deleteOutfit } from "../api/outfits.js";
+import AuthImage from "../components/AuthImage.jsx";
 
 const CATEGORY_LABELS = {
   Oberteil: "Oberteil",
@@ -345,15 +346,12 @@ export default function OutfitPage() {
                           {selected && (
                             <span className="outfit-item-check">✓</span>
                           )}
-                          {item.image_url ? (
-                            <img
-                              className="outfit-item-thumb"
-                              src={item.image_url}
-                              alt={item.name}
-                            />
-                          ) : (
-                            <div className="outfit-item-thumb" />
-                          )}
+                          <AuthImage
+                            item={item}
+                            className="outfit-item-thumb"
+                            alt={item.name}
+                            fallback={<div className="outfit-item-thumb" />}
+                          />
                           <div className="outfit-item-body">
                             <p className="outfit-item-name">{item.name}</p>
                             <span className="outfit-item-category">
@@ -391,11 +389,7 @@ export default function OutfitPage() {
                 <div className="outfit-preview-list">
                   {selectedItems.map((item) => (
                     <div className="outfit-preview-row" key={item.id}>
-                      {item.image_url ? (
-                        <img src={item.image_url} alt={item.name} />
-                      ) : (
-                        <span />
-                      )}
+                      <AuthImage item={item} alt={item.name} fallback={<span />} />
                       <span>{item.name}</span>
                     </div>
                   ))}
@@ -438,11 +432,7 @@ export default function OutfitPage() {
                       ) : (
                         outfitItems.map((item) => (
                           <div className="outfit-card-item" key={item.id}>
-                            {item.image_url ? (
-                              <img src={item.image_url} alt={item.name} />
-                            ) : (
-                              <span />
-                            )}
+                            <AuthImage item={item} alt={item.name} fallback={<span />} />
                             <span>{item.name}</span>
                           </div>
                         ))

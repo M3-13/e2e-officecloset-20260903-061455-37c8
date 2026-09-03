@@ -21,3 +21,7 @@ export function createItem({ name, category, image }) {
 export function deleteItem(itemId) {
   return client.del(`${ITEMS_PATH}/${itemId}`);
 }
+
+export function itemImageUrl(itemId) {
+  return `${ITEMS_PATH}/${itemId}/image`;
+}

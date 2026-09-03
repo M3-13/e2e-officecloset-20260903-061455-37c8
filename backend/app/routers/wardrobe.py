@@ -1,9 +1,12 @@
 from datetime import UTC, datetime
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from starlette.datastructures import UploadFile
 
+from ..config import settings
 from ..db import get_db
 from ..models import ClothingItem, User
 from ..schemas import ClothingItemList, ClothingItemOut
@@ -96,6 +99,39 @@ def list_items(
         query = query.filter(ClothingItem.category == category)
     items = query.order_by(ClothingItem.id).all()
     return ClothingItemList(items=[ClothingItemOut.model_validate(item) for item in items])
+
+
+@router.get("/items/{item_id}/image")
+def get_item_image(
+    item_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> FileResponse:
+    item = db.query(ClothingItem).filter(ClothingItem.id == item_id).first()
+    if item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "not_found", "message": "Item not found."},
+        )
+    if item.owner_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "forbidden", "message": "You do not own this item."},
+        )
+
+    filename = Path(item.image_url).name
+    if not filename:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "not_found", "message": "Image not found."},
+        )
+    file_path = settings.upload_dir / filename
+    if not file_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "not_found", "message": "Image not found."},
+        )
+    return FileResponse(file_path)
 
 
 @router.delete("/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
