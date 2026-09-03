@@ -1,0 +1,17 @@
+{
+  "runcontract": 1,
+  "services": [
+    {
+      "name": "frontend",
+      "dir": "frontend",
+      "stack": "web-vite",
+      "kind": "server",
+      "install": [["npm", "ci"]],
+      "build": [["npm", "run", "build"]],
+      "start": ["npm", "run", "dev", "--", "--port", "${PORT}"],
+      "port": 5173,
+      "port_env": "PORT",
+      "health": { "path": "/", "expect_status": [200] }
+    }
+  ]
+}
