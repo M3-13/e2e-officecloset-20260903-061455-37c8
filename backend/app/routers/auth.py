@@ -30,15 +30,28 @@ def _client_key(request: Request) -> str:
     return "unknown"
 
 
+def _prune_expired_buckets(now: float) -> None:
+    expired_keys = [
+        key
+        for key, window in _rate_buckets.items()
+        if not window or now - window[-1] > _RATE_LIMIT_WINDOW_SECONDS
+    ]
+    for key in expired_keys:
+        del _rate_buckets[key]
+
+
 def _enforce_rate_limit(request: Request) -> None:
     if settings.auth_rate_limit_disabled:
         return
     key = _client_key(request)
     now = time.monotonic()
     with _rate_lock:
+        _prune_expired_buckets(now)
         window = _rate_buckets[key]
         while window and now - window[0] > _RATE_LIMIT_WINDOW_SECONDS:
             window.popleft()
+        if not window:
+            del _rate_buckets[key]
         if len(window) >= settings.auth_rate_limit_max_requests:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -48,6 +61,7 @@ def _enforce_rate_limit(request: Request) -> None:
                 },
             )
         window.append(now)
+        _rate_buckets[key] = window
 
 
 def reset_rate_limits() -> None:
