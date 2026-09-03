@@ -113,3 +113,13 @@ def test_rate_limit_returns_429_after_five_requests(client):
     )
     assert response.status_code == 429
     assert response.json()["detail"]["code"] == "rate_limited"
+
+
+def test_rate_limit_disabled_allows_more_than_five_requests(client, monkeypatch):
+    monkeypatch.setattr(settings, "auth_rate_limit_disabled", True)
+    for _ in range(6):
+        response = client.post(
+            "/api/auth/login",
+            json={"username": "x", "password": "wrongwrong"},
+        )
+        assert response.status_code == 401
