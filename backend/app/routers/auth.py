@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from ..config import settings
 from ..db import get_db
 from ..models import User
 from ..schemas import Token, UserCreate, UserLogin
@@ -17,7 +18,6 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _MIN_PASSWORD_LENGTH = 8
 
-_RATE_LIMIT_MAX_REQUESTS = 5
 _RATE_LIMIT_WINDOW_SECONDS = 60.0
 
 _rate_lock = threading.Lock()
@@ -31,13 +31,15 @@ def _client_key(request: Request) -> str:
 
 
 def _enforce_rate_limit(request: Request) -> None:
+    if settings.auth_rate_limit_disabled:
+        return
     key = _client_key(request)
     now = time.monotonic()
     with _rate_lock:
         window = _rate_buckets[key]
         while window and now - window[0] > _RATE_LIMIT_WINDOW_SECONDS:
             window.popleft()
-        if len(window) >= _RATE_LIMIT_MAX_REQUESTS:
+        if len(window) >= settings.auth_rate_limit_max_requests:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail={
