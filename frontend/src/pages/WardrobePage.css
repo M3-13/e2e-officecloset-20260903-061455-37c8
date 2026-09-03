@@ -1,0 +1,195 @@
+.wardrobe-section {
+  margin-top: var(--space-6);
+}
+
+.upload-form h2,
+.wardrobe-section h2 {
+  margin-bottom: var(--space-4);
+}
+
+/* ---------- Upload form ---------- */
+
+.upload-form {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.upload-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 200px;
+}
+
+.field label {
+  font-size: var(--size-sm);
+  color: var(--color-muted);
+}
+
+.input {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  min-height: 44px;
+  color: var(--color-fg);
+  font-family: var(--font-family);
+  font-size: var(--size-md);
+}
+
+.input::placeholder {
+  color: var(--color-muted);
+}
+
+.input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(201, 162, 75, 0.25);
+  outline: none;
+}
+
+.file-input {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  min-height: 44px;
+  color: var(--color-muted);
+  font-family: var(--font-family);
+  font-size: var(--size-sm);
+}
+
+.form-error {
+  color: var(--color-danger);
+  margin-top: var(--space-2);
+  font-size: var(--size-sm);
+}
+
+/* ---------- Filter tags ---------- */
+
+.filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+
+.tag {
+  display: inline-block;
+  background: var(--color-surface_alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  font-size: var(--size-xs);
+  letter-spacing: 0.04em;
+}
+
+button.tag {
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+button.tag:hover {
+  color: var(--color-fg);
+}
+
+.tag-active,
+.tag-active:hover {
+  background: rgba(122, 31, 43, 0.35);
+  border-color: var(--color-burgundy);
+  color: var(--color-fg);
+}
+
+/* ---------- Grid ---------- */
+
+.wardrobe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-3);
+}
+
+.wardrobe-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition:
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+
+.wardrobe-card:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+}
+
+.card-media {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface_alt);
+  display: block;
+}
+
+.card-media-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  font-family: var(--heading-font-family);
+  font-size: var(--size-lg);
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.card-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.card-title {
+  margin: 0;
+  font-size: var(--size-md);
+  overflow-wrap: break-word;
+}
+
+.card-delete {
+  align-self: flex-start;
+}
+
+/* ---------- Empty state ---------- */
+
+.empty-state {
+  text-align: center;
+  color: var(--color-muted);
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
