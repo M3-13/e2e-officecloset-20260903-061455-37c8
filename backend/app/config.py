@@ -20,6 +20,11 @@ class Settings:
                 "JWT_SECRET is not set. Declare it in RUN.json (class 'generate') "
                 "or export it before starting the server."
             )
+        if len(secret) < 32:
+            raise RuntimeError(
+                "JWT_SECRET is too short: it must be at least 32 characters. "
+                "Declare it in RUN.json (class 'generate') or export a longer value."
+            )
         return secret
 
 
