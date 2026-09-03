@@ -36,6 +36,17 @@ export default function PrivacyPage() {
           technisch notwendige Verbindungsdaten (z. B. IP-Adresse, Zeitpunkt
           des Zugriffs).
         </li>
+        <li>
+          <strong>Zugriffstoken:</strong> Nach der Anmeldung wird ein
+          Zugriffstoken (JWT) im localStorage Ihres Browsers gespeichert, um
+          Sie bei nachfolgenden Anfragen zu identifizieren.
+        </li>
+        <li>
+          <strong>IP-Adresse:</strong> Zum Schutz vor Missbrauch wird Ihre
+          IP-Adresse für das Rate-Limiting der Anmelde- und
+          Registrierungs-Endpunkte für 60 Sekunden im Arbeitsspeicher des
+          Servers gehalten.
+        </li>
       </ul>
 
       <h2>3. Bild-Upload</h2>
@@ -108,8 +119,13 @@ export default function PrivacyPage() {
       <p>
         Wir setzen technische und organisatorische Maßnahmen ein, um Ihre Daten
         gegen Verlust, Manipulation und unbefugten Zugriff zu schützen. Dazu
-        gehören die verschlüsselte Übertragung sowie die Speicherung von
-        Passwörtern ausschließlich in gehashter Form.
+        gehört die Speicherung von Passwörtern ausschließlich in gehashter
+        Form.
+      </p>
+      <p>
+        Eine verschlüsselte Übertragung (TLS) wird im produktiven Betrieb durch
+        einen vorgeschalteten Reverse-Proxy am Deployment realisiert; der
+        Anwendungsserver selbst erzwingt keine Transportverschlüsselung.
       </p>
 
       <h2>9. Kontakt</h2>
